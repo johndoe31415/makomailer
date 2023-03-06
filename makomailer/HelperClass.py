@@ -21,12 +21,8 @@
 
 import uuid
 import email.utils
-import babel.dates
 
 class HelperClass():
-	format_date = babel.dates.format_date
-	format_datetime = babel.dates.format_datetime
-
 	@classmethod
 	def mail_addr_format(cls, email_address, fullname = None):
 		if fullname is None:
