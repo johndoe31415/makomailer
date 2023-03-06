@@ -37,8 +37,81 @@ Johannes Bauer
 [...]
 ```
 
-If the third command line option ("via") is omitted, the mails are simply
-printed out on the command line. If a "via" option is specified, it needs to
+This is the (abbreviated) JSON file that was used as input:
+
+```json
+{
+	"global": {
+		"birthday":		"1980-01-01",
+		"year":			2023
+	},
+	"hooks_once": [
+		{
+			"filename": "test_preprocess.py"
+		}
+	],
+	"hooks": [
+		{
+			"filename": "test_preprocess.py"
+		}
+	],
+	"individual": [
+		{
+			"to": {
+				"email":				"foo@invalid.net",
+				"firstname":			"Chris",
+				"lastname":				"Foo",
+				"salutation_prefix":	"Mr.",
+				"salutation":			"informal"
+			},
+			"presents": [
+				"Box of chocolates"
+			]
+		}
+	]
+}
+```
+
+All `global` data is visible from within the template as the `g` variable. Each
+rendered email has its individual `i` variable. This data is then used to
+render the template, such as in this case:
+
+```mail
+From: ${h.mail_addr_format("joe@home.net", "Jöhannes Bauer")}
+To: ${h.mail_addr_format(i["to"]["email"], i["to"]["firstname"] + " " + i["to"]["lastname"])}
+Subject: Celebräte my ${nth(g["age"])} birthday
+
+%if i["to"]["salutation"] == "formal":
+Dear\
+%else:
+Hey there\
+%endif
+%if "salutation_prefix" in i["to"]:
+ ${i["to"]["salutation_prefix"]}\
+%endif
+%if i["to"]["salutation"] == "formal":
+ ${i["to"]["lastname"]},
+%else:
+ ${i["to"]["firstname"]},
+%endif
+
+it's time to celebrate my ${nth(g["age"])} birthday. As you have discussed with me, I'm getting ${"a present" if (present_cnt == 1) else f"{present_cnt} presents"} from you. ${"Wow!" if (present_cnt > 0) else "Sad."} Also note that this is a very long line and it should, in the final email, be broken up into compliant-length lines (72 chars per line).
+```
+
+Note that there is also Python code called:
+
+```python3
+def execute_once(self):
+	self._template_vars["g"]["birthday"] = self._iso_date_parse(self._template_vars["g"]["birthday"])
+	self._template_vars["g"]["age"] = self._template_vars["g"]["year"] - self._template_vars["g"]["birthday"].year
+
+def execute_each(self):
+	self._template_vars["nth"] = self._nth
+	self._template_vars["present_cnt"] = len(self._template_vars["i"]["presents"])
+```
+
+If the third command line option (`via`) is omitted, the mails are simply
+printed out on the command line. If a `via` option is specified, it needs to
 contain details about how/where to send the emails to.
 
 Note that makomailer, by default, also stores if an email could successfully be
