@@ -1,0 +1,83 @@
+{
+	"global": {
+		"birthday":		"1980-01-01",
+		"year":			2023
+	},
+	"hooks_once": [
+		{
+			"filename": "test_preprocess.py"
+		}
+	],
+	"hooks": [
+		{
+			"filename": "test_preprocess.py"
+		}
+	],
+	"individual": [
+		{
+			"to": {
+				"email":				"foo@invalid.net",
+				"firstname":			"Chris",
+				"lastname":				"Foo",
+				"salutation_prefix":	"Mr.",
+				"salutation":			"informal"
+			},
+			"presents": [
+				"Box of chocolates"
+			]
+		},
+
+		{
+			"to": {
+				"email":				"bar@invalid.net",
+				"firstname":			"Angela",
+				"lastname":				"Bar",
+				"salutation_prefix":	"Mrs.",
+				"salutation":			"formal"
+			},
+			"presents": [
+				"Pogo stick",
+				"Bottle of wine"
+			]
+		},
+
+		{
+			"to": {
+				"email":				"moo@invalid.net",
+				"firstname":			"Herbert",
+				"lastname":				"Koo",
+				"salutation":			"informal"
+			},
+			"presents": [
+				"RC airplane"
+			]
+		},
+
+		{
+			"to": {
+				"email":				"stingy@invalid.net",
+				"firstname":			"Stingy",
+				"lastname":				"McStingface",
+				"salutation_prefix":	"Mr.",
+				"salutation":			"formal"
+			},
+			"presents": [
+			]
+		},
+
+		{
+			"to": {
+				"email":				"rich@invalid.net",
+				"firstname":			"Richard",
+				"lastname":				"McRichface",
+				"salutation_prefix":	"Mr.",
+				"salutation":			"formal"
+			},
+			"presents": [
+				"Diamonds",
+				"Emeralds",
+				"pot of gold"
+			]
+		}
+	]
+}

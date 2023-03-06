@@ -1,0 +1,20 @@
+[
+	{
+		"uri": "smtp://foobar.com"
+	},
+	{
+		"uri": "smtp+starttls://foobar.com:24",
+		"username": "joe",
+		"password": "secret"
+	},
+	{
+		"uri": "smtps://foobar.com",
+		"username": "joe",
+		"password": "secret"
+	},
+	{
+		"uri": "imaps://foobar.com/sent",
+		"username": "joe",
+		"password": "secret"
+	}
+]

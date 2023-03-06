@@ -1,0 +1,34 @@
+%if x is not None:
+${attach_file(x)}\
+%endif
+From: ${h.mail_addr_format("joe@home.net", "Jöhannes Bauer")}
+To: ${h.mail_addr_format(i["to"]["email"], i["to"]["firstname"] + " " + i["to"]["lastname"])}
+Subject: Celebräte my ${nth(g["age"])} birthday
+
+%if i["to"]["salutation"] == "formal":
+Dear\
+%else:
+Hey there\
+%endif
+%if "salutation_prefix" in i["to"]:
+ ${i["to"]["salutation_prefix"]}\
+%endif
+%if i["to"]["salutation"] == "formal":
+ ${i["to"]["lastname"]},
+%else:
+ ${i["to"]["firstname"]},
+%endif
+
+it's time to celebrate my ${nth(g["age"])} birthday. As you have discussed with me, I'm getting ${"a present" if (present_cnt == 1) else f"{present_cnt} presents"} from you. ${"Wow!" if (present_cnt > 0) else "Sad."} Also note that this is a very long line and it should, in the final email, be broken up into compliant-length lines (72 chars per line).
+
+Also I want to celebrate umlauts on my birthday. Have some: äöüÄÖÜ
+
+%if present_cnt == 1:
+I'm looking forward to the ${i["presents"][0]}.
+
+%elif present_cnt > 1:
+I'm looking forward to the ${", ".join(i["presents"][:-1])} and ${i["presents"][-1]}.
+
+%endif
+Kind regards,
+${"Johannes Bauer" if i["to"]["salutation"] == "formal" else "Johannes Bauer"}
