@@ -171,7 +171,7 @@ class MakoMailer():
 
 			# Then send the email
 			try:
-				via.send(msg, makomailer_info)
+				via.send(msg, makomailer_info, email_no)
 			finally:
 				# Even if it was aborted: if the makomailer_info structure was
 				# changed, rewrite the source file

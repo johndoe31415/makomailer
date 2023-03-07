@@ -149,12 +149,12 @@ class MailsendGateway():
 		#	individual_content["_makomailer"]["external_data"] = external_data
 		pass
 
-	def send(self, msg, makomailer_info):
+	def send(self, msg, makomailer_info, mail_no = 0):
 		self._changed = False
 		if self._config is None:
 			# Only print on stdout
+			print(f"{'─' * 60} mail {mail_no} follows {'─' * 60}")
 			print(str(msg))
-			print("-" * 120)
 		else:
 			for facility in self._config:
 				self._send_through(msg, facility, makomailer_info)
