@@ -101,7 +101,7 @@ class MakoMailer():
 		if not self._args.no_default_headers:
 			self._fill_default_headers(headers)
 
-		if not self._args.no_wrap:
+		if self._args.manual_wrap:
 			body_text = self._wrap_text(body_text)
 
 		msg = email.message.EmailMessage()
