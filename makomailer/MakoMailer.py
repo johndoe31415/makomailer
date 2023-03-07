@@ -45,6 +45,10 @@ class MakoMailer():
 
 	def _execute_hook(self, hook, template_vars, handler_name):
 		filename = hook["filename"]
+		# Relative to the actual template dir
+		template_dirname = os.path.dirname(self._args.template)
+		if template_dirname != "":
+			filename = f"{template_dirname}/{filename}"
 		spec = importlib.util.spec_from_file_location("hook_module", filename)
 		module = importlib.util.module_from_spec(spec)
 		spec.loader.exec_module(module)
@@ -89,7 +93,7 @@ class MakoMailer():
 		for header_line in headers_text.split("\n"):
 			if ": " not in header_line:
 				raise InvalidTemplateException(f"Not a valid header line: {header_line}")
-			(key, value) = header_line.split(": ")
+			(key, value) = header_line.split(": ", maxsplit = 1)
 			if key in headers:
 				print(f"Warning: Duplicate header {key} present; newer value \"{value}\" overwrites previous \"{headers[key]}\"", file = sys.stderr)
 			headers[key] = value
