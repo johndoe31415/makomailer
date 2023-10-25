@@ -63,6 +63,8 @@ class MakoMailer():
 			show_name = os.path.basename(src_filename)
 		if mimetype is None:
 			mimetype = mimetypes.guess_type(show_name)[0]
+			if mimetype is None:
+				raise InvalidTemplateException(f"File attachment of '{src_filename}' requested without MIME type; cannot infer MIME type from extension. Please specify manually.")
 		(maintype, subtype) = mimetype.split("/", maxsplit = 1)
 		attachment = self._Attachment(src_filename = src_filename, show_name = show_name, maintype = maintype, subtype = subtype)
 		self._render_results["attachments"].append(attachment)
