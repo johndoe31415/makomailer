@@ -120,7 +120,7 @@ class MakoMailer():
 		template_name = os.path.basename(self._args.template)
 		lookup = mako.lookup.TemplateLookup([ template_dir ], strict_undefined = True)
 		template = lookup.get_template(template_name)
-		via = MailsendGateway(self._args.via)
+		via = MailsendGateway(self._args.via, dump_raw = self._args.verbose <= 1)
 
 		with open(self._args.data_json) as f:
 			series_data = json.load(f, object_pairs_hook = collections.OrderedDict)

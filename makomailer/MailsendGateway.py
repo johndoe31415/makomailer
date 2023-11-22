@@ -29,13 +29,14 @@ import imaplib
 from .Exceptions import MailSendingFailedException, InvalidSendConfigurationException
 
 class MailsendGateway():
-	def __init__(self, configuration_json, force_resend = False):
+	def __init__(self, configuration_json, force_resend = False, dump_raw = False):
 		if configuration_json is None:
 			self._config = None
 		else:
 			with open(configuration_json) as f:
 				self._config = json.load(f)
 		self._force_resend = force_resend
+		self._dump_raw = dump_raw
 		self._changed = False
 
 	@property
@@ -158,7 +159,13 @@ class MailsendGateway():
 		if self.dry_run:
 			# Only print on stdout
 			print(f"{'─' * 60} mail {mail_no} follows {'─' * 60}")
-			print(str(msg))
+			if self._dump_raw:
+				for (key, value) in msg.items():
+					print(f"{key}: {value}")
+				print()
+				print(msg.get_content())
+			else:
+				print(str(msg))
 		else:
 			for facility in self._config:
 				self._send_through(msg, facility, makomailer_info)
