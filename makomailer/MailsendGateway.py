@@ -39,6 +39,10 @@ class MailsendGateway():
 		self._changed = False
 
 	@property
+	def dry_run(self):
+		return self._config is None
+
+	@property
 	def changed(self):
 		return self._changed
 
@@ -151,7 +155,7 @@ class MailsendGateway():
 
 	def send(self, msg, makomailer_info, mail_no = 0):
 		self._changed = False
-		if self._config is None:
+		if self.dry_run:
 			# Only print on stdout
 			print(f"{'─' * 60} mail {mail_no} follows {'─' * 60}")
 			print(str(msg))

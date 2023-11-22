@@ -173,6 +173,8 @@ class MakoMailer():
 
 			# Then send the email
 			try:
+				if (self._args.verbose >= 1) and (not via.dry_run):
+					print(f"Sending email #{email_no} to {msg['From']}")
 				via.send(msg, makomailer_info, email_no)
 			finally:
 				# Even if it was aborted: if the makomailer_info structure was
