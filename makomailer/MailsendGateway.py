@@ -1,5 +1,5 @@
 #	makomailer - Sending emails from templates via CLI
-#	Copyright (C) 2023-2023 Johannes Bauer
+#	Copyright (C) 2023-2024 Johannes Bauer
 #
 #	This file is part of makomailer.
 #
@@ -159,7 +159,7 @@ class MailsendGateway():
 		if self.dry_run:
 			# Only print on stdout
 			print(f"{'─' * 60} mail {mail_no} follows {'─' * 60}")
-			if self._dump_raw:
+			if self._dump_raw and msg.get_content_type() == "text/plain":
 				for (key, value) in msg.items():
 					print(f"{key}: {value}")
 				print()
