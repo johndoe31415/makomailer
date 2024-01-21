@@ -56,12 +56,23 @@ class MailsendGateway():
 			else:
 				return facility["uri"]
 
+	def _get_to_addrs(self, msg):
+		addresses = set()
+		for fieldname in [ "To", "CC", "BCC" ]:
+			value = msg[fieldname]
+			if value is None:
+				continue
+			for name_address in value.split(","):
+				(name, address) = email.utils.parseaddr(name_address)
+				addresses.add(address)
+		return list(addresses)
+
 	def _send_through_smtp_adv(self, msg, facility, hostname, port, uri, tls):
 		assert(tls in [ "no", "starttls", "tls" ])
 		smtp_class = smtplib.SMTP_SSL if (tls == "tls") else smtplib.SMTP
 
 		from_addr = email.utils.parseaddr(msg["From"])[1]
-		to_addrs = [ email.utils.parseaddr(addr)[1] for addr in msg["To"].split(",") ]
+		to_addrs = self._get_to_addrs(msg)
 
 		with smtp_class(host = hostname, port = port) as smtp:
 			if tls == "starttls":
