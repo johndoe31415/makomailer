@@ -73,6 +73,7 @@ class MailsendGateway():
 
 		from_addr = email.utils.parseaddr(msg["From"])[1]
 		to_addrs = self._get_to_addrs(msg)
+		print(f"Sending mail from {from_addr} to {', '.join(sorted(to_addrs))}")
 
 		with smtp_class(host = hostname, port = port) as smtp:
 			if tls == "starttls":
@@ -137,6 +138,7 @@ class MailsendGateway():
 
 		if (not self._force_resend) and ("sent_utc" in makomailer_info[facility_id]):
 			# Already sent, ignore.
+			print(f"Already delivered at {makomailer_info[facility_id]['sent_utc']}, not redelivering.")
 			return
 
 		uri = urllib.parse.urlparse(facility["uri"])

@@ -120,7 +120,7 @@ class MakoMailer():
 		template_name = os.path.basename(self._args.template)
 		lookup = mako.lookup.TemplateLookup([ template_dir ], strict_undefined = True)
 		template = lookup.get_template(template_name)
-		via = MailsendGateway(self._args.via, dump_raw = self._args.verbose <= 1)
+		via = MailsendGateway(self._args.via, dump_raw = self._args.verbose <= 1, force_resend = self._args.force_resend)
 
 		with open(self._args.data_json) as f:
 			series_data = json.load(f, object_pairs_hook = collections.OrderedDict)
@@ -178,7 +178,7 @@ class MakoMailer():
 			# Then send the email
 			try:
 				if (self._args.verbose >= 1) and (not via.dry_run):
-					print(f"Sending email #{email_no} to {msg['From']}")
+					print(f"Sending email #{email_no} to {msg['To']}")
 				via.send(msg, makomailer_info, email_no)
 			finally:
 				# Even if it was aborted: if the makomailer_info structure was
