@@ -1,5 +1,5 @@
 #	makomailer - Sending emails from templates via CLI
-#	Copyright (C) 2023-2023 Johannes Bauer
+#	Copyright (C) 2023-2024 Johannes Bauer
 #
 #	This file is part of makomailer.
 #
@@ -34,7 +34,7 @@ import mimetypes
 import mako.lookup
 import collections
 from .HelperClass import HelperClass
-from .Exceptions import InvalidTemplateException
+from .Exceptions import InvalidTemplateException, InvalidDataException
 from .MailsendGateway import MailsendGateway
 
 class MakoMailer():
@@ -124,6 +124,10 @@ class MakoMailer():
 
 		with open(self._args.data_json) as f:
 			series_data = json.load(f, object_pairs_hook = collections.OrderedDict)
+		if not isinstance(series_data, dict):
+			raise InvalidDataException("The main JSON object must be of type 'dict'.")
+		if not "individual" in series_data:
+			raise InvalidDataException("The main JSON object must contain a list object named 'individual'.")
 
 		only_nos = set(self._args.only_nos)
 

@@ -1,5 +1,5 @@
 #	makomailer - Sending emails from templates via CLI
-#	Copyright (C) 2023-2023 Johannes Bauer
+#	Copyright (C) 2023-2024 Johannes Bauer
 #
 #	This file is part of makomailer.
 #
@@ -21,6 +21,7 @@
 
 class MakomailerException(Exception): pass
 class InvalidTemplateException(MakomailerException): pass
+class InvalidDataException(MakomailerException): pass
 
 class MailSendingFailedException(MakomailerException): pass
 class InvalidSendConfigurationException(MailSendingFailedException): pass
