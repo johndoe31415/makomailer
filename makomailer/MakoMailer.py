@@ -38,7 +38,7 @@ from .Exceptions import InvalidTemplateException, InvalidDataException
 from .MailsendGateway import MailsendGateway
 
 class MakoMailer():
-	_Attachment = collections.namedtuple("Attachment", [ "src_filename", "show_name", "maintype", "subtype" ])
+	_Attachment = collections.namedtuple("Attachment", [ "content", "show_name", "maintype", "subtype" ])
 
 	def __init__(self, args):
 		self._args = args
@@ -66,7 +66,18 @@ class MakoMailer():
 			if mimetype is None:
 				raise InvalidTemplateException(f"File attachment of '{src_filename}' requested without MIME type; cannot infer MIME type from extension. Please specify manually.")
 		(maintype, subtype) = mimetype.split("/", maxsplit = 1)
-		attachment = self._Attachment(src_filename = src_filename, show_name = show_name, maintype = maintype, subtype = subtype)
+		with open(src_filename, "rb") as f:
+			attachment = self._Attachment(content = f.read(), show_name = show_name, maintype = maintype, subtype = subtype)
+		self._render_results["attachments"].append(attachment)
+		return ""
+
+	def _attach_data(self, content: bytes, filename: str, mimetype = None):
+		if mimetype is None:
+			mimetype = mimetypes.guess_type(filename)[0]
+			if mimetype is None:
+				raise InvalidTemplateException(f"File attachment of '{filename}' requested without MIME type; cannot infer MIME type from extension. Please specify manually.")
+		(maintype, subtype) = mimetype.split("/", maxsplit = 1)
+		attachment = self._Attachment(content = content, show_name = filename, maintype = maintype, subtype = subtype)
 		self._render_results["attachments"].append(attachment)
 		return ""
 
@@ -103,16 +114,24 @@ class MakoMailer():
 		if not self._args.no_default_headers:
 			self._fill_default_headers(headers)
 
-		if self._args.manual_wrap:
-			body_text = self._wrap_text(body_text)
 
 		msg = email.message.EmailMessage()
 		for (key, value) in headers.items():
 			msg.add_header(key, value)
-		msg.set_content(body_text, cte = "quoted-printable")
+
+		content_type = msg.get_content_type()
+
+		if content_type.startswith("text/plain") and self._args.manual_wrap:
+			body_text = self._wrap_text(body_text)
+
+		if content_type.startswith("text/plain"):
+			msg.set_content(body_text, cte = "quoted-printable")
+		elif content_type.startswith("text/html"):
+			msg.set_content(body_text, cte = "quoted-printable", subtype = "html")
+		else:
+			raise ValueError(f"Unable to handle specified content type: {content_type}")
 		for attachment in self._render_results["attachments"]:
-			with open(attachment.src_filename, "rb") as f:
-				msg.add_attachment(f.read(), maintype = attachment.maintype, subtype = attachment.subtype, filename = attachment.show_name)
+			msg.add_attachment(attachment.content, maintype = attachment.maintype, subtype = attachment.subtype, filename = attachment.show_name)
 		return msg
 
 	def run(self):
@@ -145,6 +164,7 @@ class MakoMailer():
 				"h":			HelperClass,
 				"error":		self._error,
 				"attach_file":	self._attach_file,
+				"attach_data":	self._attach_data,
 			}
 			if email_no == 1:
 				for hook in series_data.get("hooks_once", [ ]):
