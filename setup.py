@@ -17,6 +17,7 @@ setuptools.setup(
 	download_url = "https://github.com/johndoe31415/makomailer/archive/v0.0.3rc0.tar.gz",
 	keywords = [ "mako", "template", "email" ],
 	install_requires = [
+		"mako",
 	],
 	entry_points = {
 		"console_scripts": [
