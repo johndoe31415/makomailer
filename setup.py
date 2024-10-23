@@ -6,7 +6,7 @@ with open("README.md") as f:
 setuptools.setup(
 	name = "makomailer",
 	packages = setuptools.find_packages(),
-	version = "0.0.3rc0",
+	version = "0.0.3",
 	license = "gpl-3.0",
 	description = "Versatile CLI-based tool to send mails rendered from Mako templates, supporting SMTP and IMAP",
 	long_description = long_description,
@@ -14,7 +14,7 @@ setuptools.setup(
 	author = "Johannes Bauer",
 	author_email = "joe@johannes-bauer.com",
 	url = "https://github.com/johndoe31415/makomailer",
-	download_url = "https://github.com/johndoe31415/makomailer/archive/v0.0.3rc0.tar.gz",
+	download_url = "https://github.com/johndoe31415/makomailer/archive/v0.0.3.tar.gz",
 	keywords = [ "mako", "template", "email" ],
 	install_requires = [
 		"mako",
