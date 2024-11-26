@@ -184,7 +184,11 @@ class MakoMailer():
 			self._render_results = {
 				"attachments":	[ ],
 			}
-			rendered = template.render(**template_vars)
+			try:
+				rendered = template.render(**template_vars)
+			except Exception as e:
+				print(f"Rendering of email #{email_no} failed, {e.__class__.__name__}: {str(e)}", file = sys.stderr)
+				continue
 			msg = self._handle_rendered(rendered)
 
 			# Prepare data structure to use for storing internal information
