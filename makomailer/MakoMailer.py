@@ -26,6 +26,7 @@ import copy
 import textwrap
 import datetime
 import makomailer
+import base64
 import importlib.util
 import email.utils
 import email.message
@@ -80,6 +81,10 @@ class MakoMailer():
 		attachment = self._Attachment(content = content, show_name = filename, maintype = maintype, subtype = subtype)
 		self._render_results["attachments"].append(attachment)
 		return ""
+
+	def _attach_b64(self, content_base64: str, filename: str, mimetype = None):
+		content = base64.b64decode(content_base64)
+		return self._attach_data(content, filename = filename, mimetype = mimetype)
 
 	def _fill_default_headers(self, headers):
 		if "Date" not in headers:
@@ -165,6 +170,7 @@ class MakoMailer():
 				"error":		self._error,
 				"attach_file":	self._attach_file,
 				"attach_data":	self._attach_data,
+				"attach_b64":	self._attach_b64,
 			}
 			if email_no == 1:
 				for hook in series_data.get("hooks_once", [ ]):
