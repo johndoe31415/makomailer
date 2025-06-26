@@ -18,6 +18,7 @@ setuptools.setup(
 	keywords = [ "mako", "template", "email" ],
 	install_requires = [
 		"mako",
+		"mailcoil>=0.0.2",
 	],
 	entry_points = {
 		"console_scripts": [

@@ -3,6 +3,7 @@ ${attach_file(x)}\
 %endif
 From: ${h.mail_addr_format("joe@home.net", "Jöhannes Bauer")}
 To: ${h.mail_addr_format(i["to"]["email"], i["to"]["firstname"] + " " + i["to"]["lastname"])}
+CC: ${h.mail_addr_format("other@gmx.net", "some other pörsen")}, ${h.mail_addr_format("third@gmx.net", "third pörsen")}, fourth@gmx.de
 Subject: Celebräte my ${nth(g["age"])} birthday
 
 %if i["to"]["salutation"] == "formal":

@@ -1,5 +1,5 @@
 #	makomailer - Sending emails from templates via CLI
-#	Copyright (C) 2023-2024 Johannes Bauer
+#	Copyright (C) 2023-2025 Johannes Bauer
 #
 #	This file is part of makomailer.
 #
@@ -25,18 +25,16 @@ import json
 import copy
 import textwrap
 import datetime
-import makomailer
 import base64
+import traceback
 import importlib.util
-import email.utils
-import email.message
-import email.header
-import mimetypes
+import makomailer
+import mailcoil
 import mako.lookup
 import collections
 from .HelperClass import HelperClass
+from .MailVia import MailVia
 from .Exceptions import InvalidTemplateException, InvalidDataException
-from .MailsendGateway import MailsendGateway
 
 class MakoMailer():
 	_Attachment = collections.namedtuple("Attachment", [ "content", "show_name", "maintype", "subtype" ])
@@ -60,26 +58,21 @@ class MakoMailer():
 		raise Exception(msg)
 
 	def _attach_file(self, src_filename, show_name = None, mimetype = None):
-		if show_name is None:
-			show_name = os.path.basename(src_filename)
-		if mimetype is None:
-			mimetype = mimetypes.guess_type(show_name)[0]
-			if mimetype is None:
-				raise InvalidTemplateException(f"File attachment of '{src_filename}' requested without MIME type; cannot infer MIME type from extension. Please specify manually.")
-		(maintype, subtype) = mimetype.split("/", maxsplit = 1)
-		with open(src_filename, "rb") as f:
-			attachment = self._Attachment(content = f.read(), show_name = show_name, maintype = maintype, subtype = subtype)
-		self._render_results["attachments"].append(attachment)
+		self._render_results["attachments"].append({
+			"type": "file",
+			"src_filename": src_filename,
+			"show_name": show_name,
+			"mimetype": mimetype,
+		})
 		return ""
 
 	def _attach_data(self, content: bytes, filename: str, mimetype = None):
-		if mimetype is None:
-			mimetype = mimetypes.guess_type(filename)[0]
-			if mimetype is None:
-				raise InvalidTemplateException(f"File attachment of '{filename}' requested without MIME type; cannot infer MIME type from extension. Please specify manually.")
-		(maintype, subtype) = mimetype.split("/", maxsplit = 1)
-		attachment = self._Attachment(content = content, show_name = filename, maintype = maintype, subtype = subtype)
-		self._render_results["attachments"].append(attachment)
+		self._render_results["attachments"].append({
+			"type": "data",
+			"content": content,
+			"filename": filename,
+			"mimetype": mimetype,
+		})
 		return ""
 
 	def _attach_b64(self, content_base64: str, filename: str, mimetype = None):
@@ -90,7 +83,7 @@ class MakoMailer():
 		if "Date" not in headers:
 			headers["Date"] = email.utils.format_datetime(email.utils.localtime())
 		if "User-Agent" not in headers:
-			headers["User-Agent"] = f"https://github.com/johndoe31415/makomailer {makomailer.VERSION}"
+			headers["User-Agent"] = f""
 
 	def _wrap_text(self, text):
 		paragraphs = text.split("\n")
@@ -102,58 +95,91 @@ class MakoMailer():
 				lines += textwrap.wrap(par, width = 72)
 		return "\n".join(lines)
 
-	def _handle_rendered(self, rendered):
-		if "\n\n" not in rendered:
+	def _parse_email_text(self, rendered_text: str):
+		if "\n\n" not in rendered_text:
 			raise InvalidTemplateException("No '\\n\\n' found in rendered template. Either no headers supplied or template file erroneously encoded with DOS line endings.")
-		(headers_text, body_text) = rendered.split("\n\n", maxsplit = 1)
+		(headers_text, body_text) = rendered_text.split("\n\n", maxsplit = 1)
 
 		headers = { }
 		for header_line in headers_text.split("\n"):
 			if ": " not in header_line:
 				raise InvalidTemplateException(f"Not a valid header line: {header_line}")
 			(key, value) = header_line.split(": ", maxsplit = 1)
-			if key in headers:
+			lkey = key.lower()
+			if lkey in headers:
 				print(f"Warning: Duplicate header {key} present; newer value \"{value}\" overwrites previous \"{headers[key]}\"", file = sys.stderr)
-			headers[key] = value
-
-		if not self._args.no_default_headers:
-			self._fill_default_headers(headers)
+			headers[lkey] = value
+		return (headers, body_text)
 
 
-		msg = email.message.EmailMessage()
-		for (key, value) in headers.items():
-			msg.add_header(key, value)
+	def _handle_rendered(self, rendered_text: str):
+		(headers, body_text) = self._parse_email_text(rendered_text)
 
-		content_type = msg.get_content_type()
+		if "from" not in headers:
+			raise InvalidTemplateException("No 'From' header field specified.")
 
-		if content_type.startswith("text/plain") and self._args.manual_wrap:
-			body_text = self._wrap_text(body_text)
+		from_addr = mailcoil.MailAddress.parsemany(headers["from"])
+		if len(from_addr) != 1:
+			raise InvalidTemplateException("You need to specify exactly one 'From' address.")
 
-		if content_type.startswith("text/plain"):
-			msg.set_content(body_text, cte = "quoted-printable")
-		elif content_type.startswith("text/html"):
-			msg.set_content(body_text, cte = "quoted-printable", subtype = "html")
+		if "to" not in headers:
+			raise InvalidTemplateException("No 'To' header field specified.")
+		to_addr = mailcoil.MailAddress.parsemany(headers["to"])
+
+		if len(to_addr) < 0:
+			raise InvalidTemplateException("You need to specify at least one 'To' address.")
+
+		mail = mailcoil.Email(from_address = from_addr[0], wrap_text = self._args.manual_wrap)
+		mail.user_agent = f"https://github.com/johndoe31415/makomailer v{makomailer.VERSION}"
+		mail.to(*to_addr)
+		if ("cc" in headers):
+			cc_addr = mailcoil.MailAddress.parsemany(headers["cc"])
+			mail.cc(*cc_addr)
+		if ("bcc" in headers):
+			bcc_addr = mailcoil.MailAddress.parsemany(headers["bcc"])
+			mail.cc(*bcc_addr)
+
+		if "subject" in headers:
+			mail.subject = headers["subject"]
+
+		if "content-type" in headers:
+			if headers["content-type"] == "text/plain":
+				mail.text = body_text
+			elif headers["content-type"] == "text/html":
+				mail.html = body_text
+			else:
+				raise InvalidTemplateException("When setting a Content-Type, it needs to be either text/plain or text/html.")
 		else:
-			raise ValueError(f"Unable to handle specified content type: {content_type}")
+			# Without content-type, use text/plain
+			mail.text = body_text
+
 		for attachment in self._render_results["attachments"]:
-			msg.add_attachment(attachment.content, maintype = attachment.maintype, subtype = attachment.subtype, filename = attachment.show_name)
-		return msg
+			if attachment["type"] == "file":
+				mail.attach(attachment["src_filename"], mimetype = attachment["mimetype"], shown_filename = attachment["show_name"])
+			elif attachment["type"] == "data":
+				mail.attach_data(attachment["content"], filename = attachment["filename"], mimetype = attachment["mimetype"])
+			else:
+				raise NotImplementedError(attachment["type"])
+		return mail
 
 	def run(self):
 		template_dir = os.path.realpath(os.path.dirname(self._args.template))
 		template_name = os.path.basename(self._args.template)
 		lookup = mako.lookup.TemplateLookup([ template_dir ], strict_undefined = True)
 		template = lookup.get_template(template_name)
-		via = MailsendGateway(self._args.via, dump_raw = self._args.verbose <= 1, force_resend = self._args.force_resend)
+		if self._args.via is None:
+			via = None
+		else:
+			via = MailVia(self._args.via, force_resend = self._args.force_resend)
 
 		with open(self._args.data_json) as f:
 			series_data = json.load(f, object_pairs_hook = collections.OrderedDict)
 		if not isinstance(series_data, dict):
-			raise InvalidDataException("The main JSON object must be of type 'dict'.")
+			raise InvalidDataException("The root JSON object must be of type 'dict'.")
 		if not "individual" in series_data:
-			raise InvalidDataException("The main JSON object must contain a list object named 'individual'.")
+			raise InvalidDataException("The root JSON object must contain a list object named 'individual'.")
 
-		only_nos = set(self._args.only_nos)
+		only_send_mail_numbers = set(self._args.only_nos)
 
 		if self._args.external_data is not None:
 			external_data = json.loads(self._args.external_data)
@@ -176,7 +202,7 @@ class MakoMailer():
 				for hook in series_data.get("hooks_once", [ ]):
 					self._execute_hook(hook, template_vars, "handle_once")
 
-			if (len(only_nos) > 0) and (email_no not in only_nos):
+			if (len(only_send_mail_numbers) > 0) and (email_no not in only_send_mail_numbers):
 				# Skip this email, not requested on command line
 				continue
 
@@ -194,26 +220,25 @@ class MakoMailer():
 				rendered = template.render(**template_vars)
 			except Exception as e:
 				print(f"Rendering of email #{email_no} failed, {e.__class__.__name__}: {str(e)}", file = sys.stderr)
+				if self._args.verbose >= 2:
+					print(traceback.format_exc(), file = sys.stderr)
+					print(file = sys.stderr)
 				continue
-			msg = self._handle_rendered(rendered)
 
-			# Prepare data structure to use for storing internal information
-			if (self._args.via is not None) and (not self._args.no_record_successful_send):
+			# Convert the rendered email into a mailcoil email
+			mail = self._handle_rendered(rendered)
+
+			if via is None:
+				print(f"{'─' * 50} Mail #{email_no} {'─' * 50}")
+				print(mail.serialize().content)
+			else:
 				if "_makomailer" not in individual_content:
 					individual_content["_makomailer"] = { }
-				makomailer_info = individual_content["_makomailer"]
-			else:
-				makomailer_info = { }
-
-			# Then send the email
-			try:
-				if (self._args.verbose >= 1) and (not via.dry_run):
-					print(f"Sending email #{email_no} to {msg['To']}")
-				via.send(msg, makomailer_info, email_no)
-			finally:
-				# Even if it was aborted: if the makomailer_info structure was
-				# changed, rewrite the source file
-				if via.changed:
-					with open(self._args.data_json, "w") as f:
-						json.dump(series_data, f, indent = "\t", ensure_ascii = False)
-						print(file = f)
+				change = True
+				try:
+					change = via.send(mail, context = individual_content["_makomailer"])
+				finally:
+					if change and (not self._args.no_record_successful_send):
+						with open(self._args.data_json, "w") as f:
+							json.dump(series_data, f, indent = "\t", ensure_ascii = False)
+							print(file = f)

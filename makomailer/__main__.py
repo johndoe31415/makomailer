@@ -1,5 +1,5 @@
 #	makomailer - Sending emails from templates via CLI
-#	Copyright (C) 2023-2023 Johannes Bauer
+#	Copyright (C) 2023-2025 Johannes Bauer
 #
 #	This file is part of makomailer.
 #
@@ -27,7 +27,6 @@ def main():
 	parser = FriendlyArgumentParser(description = "Create emails from Mako template.")
 	parser.add_argument("-n", "--only-nos", metavar = "number", type = int, action = "append", default = [ ], help = "Only generate emails with this consecutive number. Can be specified multiple times.")
 	parser.add_argument("-w", "--manual-wrap", action = "store_true", help = "Rewrap email manually.")
-	parser.add_argument("-N", "--no-default-headers", action = "store_true", help = "By default, standard headers that are missing like 'Date' are added automatically to create a complaint email. If this command line option is given, the email is taken verbatim as-is.")
 	parser.add_argument("-x", "--external-data", metavar = "json", help = "JSON-formatted data blob that will be accessible inside the template as the 'x' variable.")
 	parser.add_argument("--force-resend", action = "store_true", help = "Force resending of emails even if source JSON data indicates it was already successfully sent.")
 	parser.add_argument("--no-record-successful-send", action = "store_true", help = "By default, if an email is successfully sent, this is recorded in the source file so that it is not accidently re-sent. This option prevents such a record.")
