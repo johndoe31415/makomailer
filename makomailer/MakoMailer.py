@@ -239,6 +239,8 @@ class MakoMailer():
 					change = via.send(mail, context = individual_content["_makomailer"])
 				finally:
 					if change and (not self._args.no_record_successful_send):
-						with open(self._args.data_json, "w") as f:
+						temp_filename = self._args.data_json + ".tmp.{os.urandom(8).hex()}"
+						with open(temp_filename, "w") as f:
 							json.dump(series_data, f, indent = "\t", ensure_ascii = False)
 							print(file = f)
+						os.rename(temp_filename, self._args.data_json)
